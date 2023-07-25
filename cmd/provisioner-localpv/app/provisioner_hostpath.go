@@ -39,7 +39,8 @@ const (
 )
 
 // ProvisionHostPath is invoked by the Provisioner which expect HostPath PV
-//  to be provisioned and a valid PV spec returned.
+//
+//	to be provisioned and a valid PV spec returned.
 func (p *Provisioner) ProvisionHostPath(ctx context.Context, opts pvController.ProvisionOptions, volumeConfig *VolumeConfig) (*v1.PersistentVolume, pvController.ProvisioningState, error) {
 	pvc := opts.PVC
 	taints := GetTaints(opts.SelectedNode)
@@ -59,6 +60,7 @@ func (p *Provisioner) ProvisionHostPath(ctx context.Context, opts pvController.P
 		}
 	}
 
+	// 获取 hostpath 路径
 	path, err := volumeConfig.GetPath()
 	if err != nil {
 		alertlog.Logger.Errorw("",
@@ -75,6 +77,7 @@ func (p *Provisioner) ProvisionHostPath(ctx context.Context, opts pvController.P
 
 	klog.Infof("Creating volume %v at node with labels {%v}, path:%v,ImagePullSecrets:%v", name, nodeAffinityLabels, path, imagePullSecrets)
 
+	// 使用 init container 对 hostpath 进行初始化
 	//Before using the path for local PV, make sure it is created.
 	initCmdsForPath := []string{"mkdir", "-m", "0777", "-p"}
 	podOpts := &HelperPodOptions{
@@ -99,6 +102,7 @@ func (p *Provisioner) ProvisionHostPath(ctx context.Context, opts pvController.P
 		return nil, pvController.ProvisioningFinished, iErr
 	}
 
+	// xfs、ext4等文件系统是否开启配额限制，比如磁盘使用率最大80%
 	if volumeConfig.IsXfsQuotaEnabled() {
 		softLimitGrace := volumeConfig.getDataField(KeyXFSQuota, KeyQuotaSoftLimit)
 		hardLimitGrace := volumeConfig.getDataField(KeyXFSQuota, KeyQuotaHardLimit)
@@ -245,9 +249,10 @@ func (p *Provisioner) GetNodeObjectFromLabels(nodeLabels map[string]string) (*v1
 }
 
 // DeleteHostPath is invoked by the PVC controller to perform clean-up
-//  activities before deleteing the PV object. If reclaim policy is
-//  set to not-retain, then this function will create a helper pod
-//  to delete the host path from the node.
+//
+//	activities before deleteing the PV object. If reclaim policy is
+//	set to not-retain, then this function will create a helper pod
+//	to delete the host path from the node.
 func (p *Provisioner) DeleteHostPath(ctx context.Context, pv *v1.PersistentVolume) (err error) {
 	defer func() {
 		err = errors.Wrapf(err, "failed to delete volume %v", pv.Name)
