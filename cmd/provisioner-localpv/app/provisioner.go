@@ -36,16 +36,24 @@ import (
 	"fmt"
 	"strings"
 
+	analytics "github.com/openebs/google-analytics-4/usage"
 	"github.com/openebs/maya/pkg/alertlog"
 	mconfig "github.com/openebs/maya/pkg/apis/openebs.io/v1alpha1"
-	menv "github.com/openebs/maya/pkg/env/v1alpha1"
-	analytics "github.com/openebs/maya/pkg/usage"
 	"github.com/pkg/errors"
 	v1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/resource"
 	clientset "k8s.io/client-go/kubernetes"
 	"k8s.io/klog/v2"
-	pvController "sigs.k8s.io/sig-storage-lib-external-provisioner/v7/controller"
+	pvController "sigs.k8s.io/sig-storage-lib-external-provisioner/v9/controller"
+)
+
+const (
+	// Ping message
+	Ping string = "ping"
+	// DefaultCASType Event application name constant for volume event
+	DefaultCASType string = "localpv"
+	// DefaultUnknownReplicaCount is the default replica count
+	DefaultUnknownReplicaCount string = "replica:1"
 )
 
 // NewProvisioner will create a new Provisioner object and initialize
@@ -214,19 +222,15 @@ func (p *Provisioner) Delete(ctx context.Context, pv *v1.PersistentVolume) (err 
 
 // sendEventOrIgnore sends anonymous local-pv provision/delete events
 func sendEventOrIgnore(pvcName, pvName, capacity, stgType, method string) {
-	if method == analytics.VolumeProvision {
-		stgType = "local-" + stgType
-	}
-	if menv.Truthy(menv.OpenEBSEnableAnalytics) {
-		analytics.New().Build().ApplicationBuilder().
-			SetVolumeType(stgType, method).
-			SetDocumentTitle(pvName).
-			SetCampaignName(pvcName).
-			SetLabel(analytics.EventLabelCapacity).
-			SetReplicaCount(analytics.LocalPVReplicaCount, method).
-			SetCategory(method).
-			SetVolumeCapacity(capacity).Send()
-	}
+	stgType = "local-" + stgType
+
+	analytics.New().CommonBuild(stgType).ApplicationBuilder().
+		SetVolumeName(pvName).
+		SetVolumeClaimName(pvcName).
+		SetLabel(analytics.EventLabelCapacity).
+		SetAction(DefaultUnknownReplicaCount).
+		SetCategory(method).
+		SetVolumeCapacity(capacity).Send()
 }
 
 // validateVolumeSource validates datasource field of the pvc.

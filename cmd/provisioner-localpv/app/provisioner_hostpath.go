@@ -26,7 +26,7 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/labels"
 	"k8s.io/klog/v2"
-	pvController "sigs.k8s.io/sig-storage-lib-external-provisioner/v7/controller"
+	pvController "sigs.k8s.io/sig-storage-lib-external-provisioner/v9/controller"
 
 	"github.com/openebs/dynamic-localpv-provisioner/pkg/kubernetes/api/core/v1/persistentvolume"
 )
