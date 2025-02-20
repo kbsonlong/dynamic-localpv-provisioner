@@ -1,26 +1,10 @@
-/*
-Copyright 2021 The OpenEBS Authors
-
-Licensed under the Apache License, Version 2.0 (the "License");
-you may not use this file except in compliance with the License.
-You may obtain a copy of the License at
-
-    http://www.apache.org/licenses/LICENSE-2.0
-
-Unless required by applicable law or agreed to in writing, software
-distributed under the License is distributed on an "AS IS" BASIS,
-WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-See the License for the specific language governing permissions and
-limitations under the License.
-*/
-
 package tests
 
 import (
 	"context"
 	"fmt"
 
-	. "github.com/onsi/ginkgo"
+	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 	corev1 "k8s.io/api/core/v1"
 	storagev1 "k8s.io/api/storage/v1"
@@ -45,6 +29,7 @@ var _ = Describe("TEST HOSTPATH XFS QUOTA LOCAL PV WITH UNSUPPORTED FILESYSTEM",
 		podObj        *corev1.Pod
 		labelselector = map[string]string{
 			"demo": "hostpath-pod",
+			"role": "test",
 		}
 	)
 
@@ -180,7 +165,7 @@ var _ = Describe("TEST HOSTPATH XFS QUOTA LOCAL PV WITH UNSUPPORTED FILESYSTEM",
 			)
 
 			By("deleting above PVC")
-			err = ops.PVCClient.Delete(context.TODO(), pvcName, &metav1.DeleteOptions{})
+			err = ops.PVCClient.WithNamespace(namespaceObj.Name).Delete(context.TODO(), pvcName, &metav1.DeleteOptions{})
 			Expect(err).To(
 				BeNil(),
 				"while deleting pvc {%s} in namespace {%s}",
@@ -223,6 +208,7 @@ var _ = Describe("TEST HOSTPATH XFS QUOTA LOCAL PV WITH XFS FILESYSTEM", func() 
 		podObj        *corev1.Pod
 		labelselector = map[string]string{
 			"demo": "hostpath-pod",
+			"role": "test",
 		}
 	)
 
@@ -373,7 +359,7 @@ var _ = Describe("TEST HOSTPATH XFS QUOTA LOCAL PV WITH XFS FILESYSTEM", func() 
 			)
 
 			By("deleting above PVC")
-			err = ops.PVCClient.Delete(context.TODO(), pvcName, &metav1.DeleteOptions{})
+			err = ops.PVCClient.WithNamespace(namespaceObj.Name).Delete(context.TODO(), pvcName, &metav1.DeleteOptions{})
 			Expect(err).To(
 				BeNil(),
 				"while deleting pvc {%s} in namespace {%s}",
@@ -424,6 +410,7 @@ var _ = Describe("TEST HOSTPATH EXT4 QUOTA LOCAL PV WITH UNSUPPORTED FILESYSTEM"
 		podObj        *corev1.Pod
 		labelselector = map[string]string{
 			"demo": "hostpath-pod",
+			"role": "test",
 		}
 	)
 
@@ -559,7 +546,7 @@ var _ = Describe("TEST HOSTPATH EXT4 QUOTA LOCAL PV WITH UNSUPPORTED FILESYSTEM"
 			)
 
 			By("deleting above PVC")
-			err = ops.PVCClient.Delete(context.TODO(), pvcName, &metav1.DeleteOptions{})
+			err = ops.PVCClient.WithNamespace(namespaceObj.Name).Delete(context.TODO(), pvcName, &metav1.DeleteOptions{})
 			Expect(err).To(
 				BeNil(),
 				"while deleting pvc {%s} in namespace {%s}",
@@ -602,6 +589,7 @@ var _ = Describe("TEST HOSTPATH EXT4 QUOTA LOCAL PV WITH EXT4 FILESYSTEM", func(
 		podObj        *corev1.Pod
 		labelselector = map[string]string{
 			"demo": "hostpath-pod",
+			"role": "test",
 		}
 	)
 
@@ -752,7 +740,7 @@ var _ = Describe("TEST HOSTPATH EXT4 QUOTA LOCAL PV WITH EXT4 FILESYSTEM", func(
 			)
 
 			By("deleting above PVC")
-			err = ops.PVCClient.Delete(context.TODO(), pvcName, &metav1.DeleteOptions{})
+			err = ops.PVCClient.WithNamespace(namespaceObj.Name).Delete(context.TODO(), pvcName, &metav1.DeleteOptions{})
 			Expect(err).To(
 				BeNil(),
 				"while deleting pvc {%s} in namespace {%s}",

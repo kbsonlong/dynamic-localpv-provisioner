@@ -1,22 +1,3 @@
-/*
-Copyright 2019 The OpenEBS Authors.
-
-Licensed under the Apache License, Version 2.0 (the "License");
-you may not use this file except in compliance with the License.
-You may obtain a copy of the License at
-
-    http://www.apache.org/licenses/LICENSE-2.0
-
-Unless required by applicable law or agreed to in writing, software
-distributed under the License is distributed on an "AS IS" BASIS,
-WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-See the License for the specific language governing permissions and
-limitations under the License.
-
-This code was taken from https://github.com/rancher/local-path-provisioner
-and modified to work with the configuration options used by OpenEBS
-*/
-
 package app
 
 import (
@@ -31,6 +12,7 @@ import (
 	hostpath "github.com/openebs/maya/pkg/hostpath/v1alpha1"
 	errors "github.com/pkg/errors"
 	corev1 "k8s.io/api/core/v1"
+	k8serror "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/klog/v2"
 
@@ -84,6 +66,9 @@ type HelperPodOptions struct {
 
 	//pvcStorage is the storage requested for pv
 	pvcStorage int64
+
+	//hostNetwork is the network type of helper Pod
+	hostNetwork bool
 }
 
 // validate checks that the required fields to launch
@@ -189,12 +174,12 @@ func (p *Provisioner) createInitPod(ctx context.Context, pOpts *HelperPodOptions
 
 	config.pOpts.cmdsForPath = append(config.pOpts.cmdsForPath, filepath.Join("/data/", config.volumeDir))
 
-	iPod, err := p.launchPod(ctx, config)
-	if err != nil {
+	_, err := p.launchPod(ctx, config)
+	if err != nil && !k8serror.IsAlreadyExists(err) {
 		return err
 	}
 
-	if err := p.exitPod(ctx, iPod); err != nil {
+	if err := p.exitPod(ctx, config.podName+"-"+config.pOpts.name); err != nil {
 		return err
 	}
 
@@ -230,12 +215,12 @@ func (p *Provisioner) createCleanupPod(ctx context.Context, pOpts *HelperPodOpti
 
 	config.pOpts.cmdsForPath = append(config.pOpts.cmdsForPath, filepath.Join("/data/", config.volumeDir))
 
-	cPod, err := p.launchPod(ctx, config)
-	if err != nil {
+	_, err := p.launchPod(ctx, config)
+	if err != nil && !k8serror.IsAlreadyExists(err) {
 		return err
 	}
 
-	if err := p.exitPod(ctx, cPod); err != nil {
+	if err := p.exitPod(ctx, config.podName+"-"+config.pOpts.name); err != nil {
 		return err
 	}
 	return nil
@@ -302,12 +287,12 @@ func (p *Provisioner) createQuotaPod(ctx context.Context, pOpts *HelperPodOption
 		"  rm -rf " + filepath.Join("/data/", config.volumeDir) + " ; exit 1; fi"
 	config.pOpts.cmdsForPath = []string{"sh", "-c", fs + checkQuota}
 
-	qPod, err := p.launchPod(ctx, config)
-	if err != nil {
+	_, err := p.launchPod(ctx, config)
+	if err != nil && !k8serror.IsAlreadyExists(err) {
 		return err
 	}
 
-	if err := p.exitPod(ctx, qPod); err != nil {
+	if err := p.exitPod(ctx, config.podName+"-"+config.pOpts.name); err != nil {
 		return err
 	}
 
@@ -357,6 +342,7 @@ func (p *Provisioner) launchPod(ctx context.Context, config podConfig) (*corev1.
 				WithName("dev").
 				WithHostDirectory("/dev/"),
 		).
+		WithHostNetwork(config.pOpts.hostNetwork).
 		Build()
 
 	if err != nil {
@@ -370,9 +356,9 @@ func (p *Provisioner) launchPod(ctx context.Context, config podConfig) (*corev1.
 	return hPod, err
 }
 
-func (p *Provisioner) exitPod(ctx context.Context, hPod *corev1.Pod) error {
+func (p *Provisioner) exitPod(ctx context.Context, hPodName string) error {
 	defer func() {
-		e := p.kubeClient.CoreV1().Pods(p.namespace).Delete(ctx, hPod.Name, metav1.DeleteOptions{})
+		e := p.kubeClient.CoreV1().Pods(p.namespace).Delete(ctx, hPodName, metav1.DeleteOptions{})
 		if e != nil {
 			klog.Errorf("unable to delete the helper pod: %v", e)
 		}
@@ -381,12 +367,17 @@ func (p *Provisioner) exitPod(ctx context.Context, hPod *corev1.Pod) error {
 	//Wait for the helper pod to complete it job and exit
 	completed := false
 	for i := 0; i < CmdTimeoutCounts; i++ {
-		checkPod, err := p.kubeClient.CoreV1().Pods(p.namespace).Get(ctx, hPod.Name, metav1.GetOptions{})
+		checkPod, err := p.kubeClient.CoreV1().Pods(p.namespace).Get(ctx, hPodName, metav1.GetOptions{})
 		if err != nil {
 			return err
 		} else if checkPod.Status.Phase == corev1.PodSucceeded {
 			completed = true
 			break
+		} else {
+			// Currently we use `RestartPolicyNever`, if this changes we may need a different logic here, ex: x many restarts.
+			if checkPod.Spec.RestartPolicy == corev1.RestartPolicyNever && checkPod.Status.Phase == corev1.PodFailed {
+				return errors.Errorf("pod %v has failed", checkPod.Name)
+			}
 		}
 		time.Sleep(1 * time.Second)
 	}

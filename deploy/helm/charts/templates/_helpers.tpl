@@ -38,7 +38,6 @@ Meta labels
 {{- define "localpv.common.metaLabels" -}}
 chart: {{ template "localpv.chart" . }}
 heritage: {{ .Release.Service }}
-openebs.io/version: {{ .Values.release.version | quote }}
 {{- end -}}
 
 {{/*
@@ -66,7 +65,6 @@ Common labels
 {{ include "localpv.componentLabels" . }}
 {{- end -}}
 
-
 {{/*
 Create the name of the service account to use
 */}}
@@ -77,3 +75,17 @@ Create the name of the service account to use
     {{ default "default" .Values.serviceAccount.name }}
 {{- end -}}
 {{- end -}}
+
+{{/*
+Creates the tolerations based on the global tolerations, with early eviction
+Usage:
+{{ include "tolerations_with_early_eviction" . }}
+*/}}
+{{- define "tolerations_with_early_eviction" -}}
+{{- if .Values.earlyEvictionTolerations }}
+    {{- toYaml .Values.earlyEvictionTolerations | nindent 8 }}
+{{- end }}
+{{- if .Values.localpv.tolerations }}
+    {{- toYaml .Values.localpv.tolerations | nindent 8 }}
+{{- end }}
+{{- end }}

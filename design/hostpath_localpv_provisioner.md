@@ -1,5 +1,5 @@
 ---
-title: Hostpath LocalPV Provisioner
+title: LocalPV Hostpath
 authors:
   - "@niladrih"
 owners:
@@ -8,20 +8,21 @@ creation-date: 2021-08-28
 last-updated: 2021-08-28
 ---
 
-# Hostpath LocalPV Provisioner
+# LocalPV Hostpath
 
 ## Table of Contents
 
-* [Table of Contents](#table-of-contents)
-* [Summary](#summary)
-* [Problem](#problem)
-* [Current Solution](#current-solution)
-* [Proposal](#proposal)
-    * [Hostpath LocalPV StorageClass](#hostpath-localpv-storageclass)
-    * [Hostpath LocalPV Provisioner Controller](#hostpath-localpv-provisioner-controller)
-    * [Workflow](#workflow)
-* [Test Plan](#test-plan)
-* [GA Criteria](#ga-criteria)
+- [LocalPV Hostpath](#localpv-hostpath)
+  - [Table of Contents](#table-of-contents)
+  - [Summary](#summary)
+  - [Problem](#problem)
+  - [Current Solution](#current-solution)
+  - [Proposal](#proposal)
+    - [Hostpath LocalPV StorageClass](#hostpath-localpv-storageclass)
+    - [Hostpath LocalPV Provisioner Controller](#hostpath-localpv-provisioner-controller)
+    - [Workflow](#workflow)
+  - [Test Plan](#test-plan)
+  - [GA Criteria](#ga-criteria)
 
 ## Summary
 
@@ -106,7 +107,7 @@ The Hostpath provisioner Deployment, RBAC components and the default StorageClas
 You should be able to follow the steps below to provision a local hostpath volume dynamically:
 - Deploy Hostpath LocalPV Provisioner
 ```bash
-kubectl apply -f https://openebs.github.io/charts/hostpath-operator.yaml
+helm install openebs openebs/openebs -n openebs
 ```
 - Create StorageClass
 ```bash

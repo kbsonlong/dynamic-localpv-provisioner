@@ -1,3 +1,37 @@
+v4.2.0 / 2025-02-01
+===================
+* Merge cas-config from PVC ([#190](https://github.com/openebs/dynamic-localpv-provisioner/pull/190),[@nobiit](https://github.com/nobiit))
+* Add option for helperPod to use hostNetwork ([#224](https://github.com/openebs/dynamic-localpv-provisioner/pull/224),[@mchtech](https://github.com/mchtech))
+* Add global.imageRegistry Helm chart parameter ([#227](https://github.com/openebs/dynamic-localpv-provisioner/pull/227),[@lkummer](https://github.com/lkummer))
+* Add timeout to helperPod wait if the launchPod failed ([#237](https://github.com/openebs/dynamic-localpv-provisioner/pull/237),[@tiagolobocastro](https://github.com/tiagolobocastro))
+* Add eviction tolerations to the provisioner pod ([#238](https://github.com/openebs/dynamic-localpv-provisioner/pull/238),[@niladrih](https://github.com/niladrih))
+
+v4.1.4 / 2025-01-23
+===================
+* Let helm chart generate priorityClassName from go-template ([#236](https://github.com/openebs/dynamic-localpv-provisioner/pull/236),[@niladrih](https://github.com/niladrih))
+
+v4.1.3 / 2025-01-22
+===================
+* Add pod priorityClassName to prevent race condition due to pod eviction ([#182](https://github.com/openebs/dynamic-localpv-provisioner/pull/182),[@bernardgut](https://github.com/bernardgut))
+* Allow specifying additional labels to be applied to all helm chart resources ([#183](https://github.com/openebs/dynamic-localpv-provisioner/pull/183),[@laverya](https://github.com/laverya))
+
+v4.1.2 / 2024-11-28
+===================
+* Fix bug where analytics toggle env configuration doesn't disable analytics ([#211](https://github.com/openebs/dynamic-localpv-provisioner/pull/211),[@emosbaugh](https://github.com/emosbaugh))
+
+v4.1.1 / 2024-09-13
+===================
+* Update analytics dependency to v0.3.0 ([#200](https://github.com/openebs/dynamic-localpv-provisioner/pull/200),[@niladrih](https://github.com/niladrih))
+
+v4.1.0 / 2024-07-03
+===================
+* feat(provisioner): update analytics pkg ([#188](https://github.com/openebs/dynamic-localpv-provisioner/pull/188),[@niladrih](https://github.com/niladrih))
+* build: update base alpine image version to 3.20.1 ([#189](https://github.com/openebs/dynamic-localpv-provisioner/pull/189),[@niladrih](https://github.com/niladrih))
+
+v4.0.0 / 2024-03-21
+===================
+* revert!: disable localpv device ([#172](https://github.com/openebs/dynamic-localpv-provisioner/pull/172),[@Abhinandan-Purkait](https://github.com/Abhinandan-Purkait))
+
 v3.5.0 / 2023-12-12
 ===================
 * fix: quota is not calculated correctly ([#161](https://github.com/openebs/dynamic-localpv-provisioner/pull/161),[@MingZhang-YBPS](https://github.com/MingZhang-YBPS))

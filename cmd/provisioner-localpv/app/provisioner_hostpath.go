@@ -1,19 +1,3 @@
-/*
-Copyright 2019 The OpenEBS Authors.
-
-Licensed under the Apache License, Version 2.0 (the "License");
-you may not use this file except in compliance with the License.
-You may obtain a copy of the License at
-
-    http://www.apache.org/licenses/LICENSE-2.0
-
-Unless required by applicable law or agreed to in writing, software
-distributed under the License is distributed on an "AS IS" BASIS,
-WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-See the License for the specific language governing permissions and
-limitations under the License.
-*/
-
 package app
 
 import (
@@ -75,6 +59,8 @@ func (p *Provisioner) ProvisionHostPath(ctx context.Context, opts pvController.P
 
 	imagePullSecrets := GetImagePullSecrets(getOpenEBSImagePullSecrets())
 
+	hostNetwork := getHelperPodHostNetwork()
+
 	klog.Infof("Creating volume %v at node with labels {%v}, path:%v,ImagePullSecrets:%v", name, nodeAffinityLabels, path, imagePullSecrets)
 
 	// 使用 init container 对 hostpath 进行初始化
@@ -88,6 +74,7 @@ func (p *Provisioner) ProvisionHostPath(ctx context.Context, opts pvController.P
 		serviceAccountName: saName,
 		selectedNodeTaints: taints,
 		imagePullSecrets:   imagePullSecrets,
+		hostNetwork:        hostNetwork,
 	}
 	iErr := p.createInitPod(ctx, podOpts)
 	if iErr != nil {
@@ -118,6 +105,7 @@ func (p *Provisioner) ProvisionHostPath(ctx context.Context, opts pvController.P
 			softLimitGrace:     softLimitGrace,
 			hardLimitGrace:     hardLimitGrace,
 			pvcStorage:         pvcStorage,
+			hostNetwork:        hostNetwork,
 		}
 		iErr := p.createQuotaPod(ctx, podOpts)
 		if iErr != nil {
@@ -154,6 +142,7 @@ func (p *Provisioner) ProvisionHostPath(ctx context.Context, opts pvController.P
 			softLimitGrace:     softLimitGrace,
 			hardLimitGrace:     hardLimitGrace,
 			pvcStorage:         pvcStorage,
+			hostNetwork:        hostNetwork,
 		}
 		iErr := p.createQuotaPod(ctx, podOpts)
 		if iErr != nil {
@@ -281,6 +270,8 @@ func (p *Provisioner) DeleteHostPath(ctx context.Context, pv *v1.PersistentVolum
 
 	imagePullSecrets := GetImagePullSecrets(getOpenEBSImagePullSecrets())
 
+	hostNetwork := getHelperPodHostNetwork()
+
 	//Initiate clean up only when reclaim policy is not retain.
 	klog.Infof("Deleting volume %v at %v:%v", pv.Name, GetNodeHostname(nodeObject), path)
 	cleanupCmdsForPath := []string{"rm", "-rf"}
@@ -292,6 +283,7 @@ func (p *Provisioner) DeleteHostPath(ctx context.Context, pv *v1.PersistentVolum
 		serviceAccountName: saName,
 		selectedNodeTaints: taints,
 		imagePullSecrets:   imagePullSecrets,
+		hostNetwork:        hostNetwork,
 	}
 
 	if err := p.createCleanupPod(ctx, podOpts); err != nil {

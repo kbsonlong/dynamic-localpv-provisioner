@@ -1,20 +1,4 @@
 /*
-Copyright 2019 The OpenEBS Authors.
-
-Licensed under the Apache License, Version 2.0 (the "License");
-you may not use this file except in compliance with the License.
-You may obtain a copy of the License at
-
-    http://www.apache.org/licenses/LICENSE-2.0
-
-Unless required by applicable law or agreed to in writing, software
-distributed under the License is distributed on an "AS IS" BASIS,
-WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-See the License for the specific language governing permissions and
-limitations under the License.
-*/
-
-/*
 This file contains the volume creation and deletion handlers invoked by
 the github.com/kubernetes-sigs/sig-storage-lib-external-provisioner/controller.
 
@@ -39,6 +23,7 @@ import (
 	analytics "github.com/openebs/google-analytics-4/usage"
 	"github.com/openebs/maya/pkg/alertlog"
 	mconfig "github.com/openebs/maya/pkg/apis/openebs.io/v1alpha1"
+	menv "github.com/openebs/maya/pkg/env/v1alpha1"
 	"github.com/pkg/errors"
 	v1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/resource"
@@ -50,10 +35,12 @@ import (
 const (
 	// Ping message
 	Ping string = "ping"
+	// Heartbeat message.
+	Heartbeat string = "heartbeat"
 	// DefaultCASType Event application name constant for volume event
-	DefaultCASType string = "localpv"
+	DefaultCASType string = "hostpath-localpv"
 	// DefaultUnknownReplicaCount is the default replica count
-	DefaultUnknownReplicaCount string = "replica:1"
+	DefaultUnknownReplicaCount string = "1"
 )
 
 // NewProvisioner will create a new Provisioner object and initialize
@@ -137,10 +124,7 @@ func (p *Provisioner) Provision(ctx context.Context, opts pvController.Provision
 	}
 	sendEventOrIgnore(pvc.Name, name, size.String(), stgType, analytics.VolumeProvision)
 
-	// StorageType: Device
-	if stgType == "device" {
-		return p.ProvisionBlockDevice(ctx, opts, pvCASConfig)
-	}
+	// todo: Disable the localpv device provisioning for now. Revisit later to remove the code path.
 
 	// EXCEPTION: Block VolumeMode
 	if *opts.PVC.Spec.VolumeMode == v1.PersistentVolumeBlock && stgType != "device" {
@@ -185,19 +169,7 @@ func (p *Provisioner) Delete(ctx context.Context, pv *v1.PersistentVolume) (err 
 			pvcName = pv.Spec.ClaimRef.Name
 		}
 		sendEventOrIgnore(pvcName, pv.Name, size.String(), pvType, analytics.VolumeDeprovision)
-		if pvType == "local-device" {
-			err := p.DeleteBlockDevice(ctx, pv)
-			if err != nil {
-				alertlog.Logger.Errorw("",
-					"eventcode", "local.pv.delete.failure",
-					"msg", "Failed to delete Local PV",
-					"rname", pv.Name,
-					"reason", "failed to delete block device",
-					"storagetype", pvType,
-				)
-			}
-			return err
-		}
+		// todo: Disable the localpv device deprovisioning for now. Revisit later to remove the code path.
 
 		err = p.DeleteHostPath(ctx, pv)
 		if err != nil {
@@ -222,15 +194,17 @@ func (p *Provisioner) Delete(ctx context.Context, pv *v1.PersistentVolume) (err 
 
 // sendEventOrIgnore sends anonymous local-pv provision/delete events
 func sendEventOrIgnore(pvcName, pvName, capacity, stgType, method string) {
-	stgType = "local-" + stgType
+	if menv.Truthy(menv.OpenEBSEnableAnalytics) {
+		stgType = "local-" + stgType
 
-	analytics.New().CommonBuild(stgType).ApplicationBuilder().
-		SetVolumeName(pvName).
-		SetVolumeClaimName(pvcName).
-		SetLabel(analytics.EventLabelCapacity).
-		SetAction(DefaultUnknownReplicaCount).
-		SetCategory(method).
-		SetVolumeCapacity(capacity).Send()
+		analytics.New().CommonBuild(stgType).ApplicationBuilder().
+			SetVolumeName(pvName).
+			SetVolumeClaimName(pvcName).
+			SetReplicaCount(DefaultUnknownReplicaCount).
+			SetCategory(method).
+			SetVolumeCapacity(capacity).
+			Send()
+	}
 }
 
 // validateVolumeSource validates datasource field of the pvc.
